@@ -1,0 +1,3 @@
+[submodule "external/tlslite-ng"]
+	path = external/tlslite-ng
+	url = https://github.com/LCamel/tlslite-ng
