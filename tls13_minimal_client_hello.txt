@@ -1,0 +1,13 @@
+1.  **Record Header:** Type = Handshake (22), Legacy Version = 0x0301 (TLS 1.0, 為了最大兼容性), Length = ClientHello 總長度。
+2.  **Handshake Header:** Type = ClientHello (1), Length = 以下部分的長度。
+3.  **ClientHello Body:**
+    *   `legacy_version`: `0x0303`
+    *   `random`: 32 字節的隨機數
+    *   `legacy_session_id`: 32 字節的不可預測值 (長度字節為 32)
+    *   `cipher_suites`: 長度 2, 值 `[0x13, 0x01]`
+    *   `legacy_compression_methods`: 長度 1, 值 `[0x00]`
+    *   `extensions`:
+        *   `supported_versions`: 包含 `0x0304`
+        *   `supported_groups`: 包含 `0x0017` (secp256r1)
+        *   `signature_algorithms`: 包含 `0x0403`, `0x0804`, `0x0401`
+        *   `key_share`: 包含一個 secp256r1 (`0x0017`) 的公鑰
