@@ -5,6 +5,8 @@ import time
 
 # Import the generate_client_hello function from tls13_client_hello
 from tls13_client_hello import generate_client_hello
+# Import RecordLayer class
+from record_layer import RecordLayer, RECORD_TYPE_HANDSHAKE
 
 def generate_keys():
     """Generate a SECP256R1 private key and corresponding public key"""
@@ -28,27 +30,35 @@ def connect_to_server(hostname, port, client_hello):
         sock.settimeout(5)  # Set timeout to 5 seconds
         sock.connect((hostname, port))
         
-        # Send the ClientHello message
-        sock.sendall(client_hello)
+        # Create RecordLayer instance
+        record_layer = RecordLayer(sock)
+        
+        # Send the ClientHello message using RecordLayer
+        record_layer.write_handshake(client_hello)
         print(f"Sent {len(client_hello)} bytes of ClientHello message")
         
-        # Receive the response
-        response = b""
+        # Receive the response using RecordLayer
+        responses = []
         start_time = time.time()
         while time.time() - start_time < 3:  # Wait for up to 3 seconds for data
             try:
-                chunk = sock.recv(4096)
-                if not chunk:
+                record_type, data = record_layer.read_record()
+                responses.append((record_type, data))
+                print(f"Received record type {record_type} with {len(data)} bytes")
+                
+                # If we have received at least one handshake record, we can stop
+                # In a complete implementation, we should process all records
+                if len(responses) > 0:
                     break
-                response += chunk
-                # If we have enough data, we can stop
-                if len(response) > 100:  # At least get enough to see the ServerHello
-                    break
-            except socket.timeout:
+            except ConnectionError as e:
+                print(f"Connection error: {e}")
+                break
+            except Exception as e:
+                print(f"Error receiving data: {e}")
                 break
         
         sock.close()
-        return response
+        return responses
     except Exception as e:
         print(f"Error connecting to server: {e}")
         return None
@@ -69,21 +79,25 @@ def main():
     
     # Send ClientHello and get response
     print(f"Connecting to {hostname}:{port}...")
-    response = connect_to_server(hostname, port, client_hello)
+    responses = connect_to_server(hostname, port, client_hello)
     
-    if response:
-        print(f"Received {len(response)} bytes in response")
-        # Check if response contains ServerHello (very simplified check)
-        # ServerHello typically starts with record type 22 (handshake) and contains message type 2
-        # This is a very basic check and might not be 100% accurate
-        if len(response) > 5 and response[0] == 22:
-            print("Received what appears to be a TLS handshake response")
-            print(f"First 20 bytes: {response[:20].hex()}")
-        else:
-            print("Response doesn't appear to be a TLS handshake")
-            print(f"First 20 bytes: {response[:20].hex()}")
+    if responses:
+        print(f"Received {len(responses)} records in response")
+        
+        # Process each received record
+        for i, (record_type, data) in enumerate(responses):
+            print(f"Record #{i+1}:")
+            print(f"  Type: {record_type}")
+            print(f"  Length: {len(data)} bytes")
+            print(f"  First 20 bytes: {data[:20].hex()}")
+            
+            # Special handling for handshake records
+            if record_type == RECORD_TYPE_HANDSHAKE:
+                print("  This is a handshake record")
+                # In a complete implementation, we would further parse
+                # the handshake message type and contents here
     else:
-        print("No response received or error occurred")
+        print("No responses received or error occurred")
     
 if __name__ == "__main__":
     main()

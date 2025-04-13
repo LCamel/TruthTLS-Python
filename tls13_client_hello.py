@@ -9,11 +9,9 @@ import struct
 import secrets
 
 # Constants for TLS record types and versions
-TLS_RECORD_TYPE_HANDSHAKE = 22
 TLS_HANDSHAKE_TYPE_CLIENT_HELLO = 1
 
 # Legacy versions
-TLS_VERSION_1_0 = 0x0301  # For record header
 TLS_VERSION_1_2 = 0x0303  # For legacy_version field
 TLS_VERSION_1_3 = 0x0304  # For supported_versions extension
 
@@ -43,7 +41,8 @@ def generate_client_hello(public_key_bytes):
         public_key_bytes: The secp256r1 public key as bytes
         
     Returns:
-        The complete TLS record containing the ClientHello message as bytes
+        The handshake message containing the ClientHello as bytes
+        (without the record layer header)
     """
     # Generate 32 bytes of pure random data using cryptographically secure RNG
     random_data = secrets.token_bytes(32)
@@ -57,10 +56,7 @@ def generate_client_hello(public_key_bytes):
     # Add handshake header
     handshake_message = _add_handshake_header(client_hello_body)
     
-    # Add TLS record header
-    tls_record = _add_record_header(handshake_message)
-    
-    return tls_record
+    return handshake_message
 
 
 def _create_client_hello_body(random_data, session_id, public_key_bytes):
@@ -227,23 +223,6 @@ def _add_handshake_header(client_hello_body):
     handshake_length = struct.pack('!I', len(client_hello_body))[1:]  # 3 bytes, drop the first byte
     
     return handshake_type + handshake_length + client_hello_body
-
-
-def _add_record_header(handshake_message):
-    """
-    Add TLS record header to the handshake message.
-    
-    Args:
-        handshake_message: The handshake message as bytes
-        
-    Returns:
-        The complete TLS record as bytes
-    """
-    record_type = bytes([TLS_RECORD_TYPE_HANDSHAKE])
-    record_version = struct.pack('!H', TLS_VERSION_1_0)  # Legacy version 1.0 for maximum compatibility
-    record_length = struct.pack('!H', len(handshake_message))
-    
-    return record_type + record_version + record_length + handshake_message
 
 
 if __name__ == "__main__":

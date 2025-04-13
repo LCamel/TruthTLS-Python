@@ -21,3 +21,11 @@ return message 表示為 bytes 或 bytearray, 看你實作方便.
 送到 www.google.com 443
 並收取 response bytes 看看是否有 ServerHello 回來
 ```
+
+```
+我想要有一個 class RecordLayer
+initialize 時給一個 socket
+有幾個 method
+write_handshake() 給一個 bytes 的 data
+read_record() 回傳 integer 的 type 和 bytes 的 data
+```
