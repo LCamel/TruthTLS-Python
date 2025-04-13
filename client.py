@@ -25,45 +25,38 @@ def generate_keys():
     return private_key, public_key, uncompressed_bytes
 
 def connect_to_server(hostname, port, client_hello):
-    """Connect to the server and send ClientHello message"""
+    """Connect to the server, send ClientHello message, and receive ServerHello"""
     try:
-        # Create a socket and connect to the server
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5)  # Set timeout to 5 seconds
-        sock.connect((hostname, port))
-        
-        # Create RecordLayer instance
-        record_layer = RecordLayer(sock)
-        
-        # Create MessageLayer instance
-        message_layer = MessageLayer(record_layer)
-        
-        # Send the ClientHello message using MessageLayer
-        message_layer.write_handshake(client_hello)
-        print(f"Sent {len(client_hello)} bytes of ClientHello message")
-        
-        # Receive the response using MessageLayer
-        responses = []
-        start_time = time.time()
-        while time.time() - start_time < 3:  # Wait for up to 3 seconds for data
+        # Create a socket and connect to the server using 'with' statement
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(5)  # Set timeout to 5 seconds
+            sock.connect((hostname, port))
+            
+            # Create RecordLayer instance
+            record_layer = RecordLayer(sock)
+            
+            # Create MessageLayer instance
+            message_layer = MessageLayer(record_layer)
+            
+            # Send the ClientHello message using MessageLayer
+            message_layer.write_handshake(client_hello)
+            print(f"Sent {len(client_hello)} bytes of ClientHello message")
+            
+            # Wait for the ServerHello response (should be a handshake message)
             try:
                 content_type, data = message_layer.read_message()
-                responses.append((content_type, data))
                 print(f"Received message type {content_type} with {len(data)} bytes")
                 
-                # If we have received at least one handshake message, we can stop
-                # In a complete implementation, we should process all messages
-                if len(responses) > 0:
-                    break
-            except ConnectionError as e:
-                print(f"Connection error: {e}")
-                break
+                # Check if the received message is a handshake message (type 22)
+                if content_type == RECORD_TYPE_HANDSHAKE:
+                    print("Received handshake message (ServerHello)")
+                    return content_type, data
+                else:
+                    print(f"Unexpected message type: {content_type}")
             except Exception as e:
-                print(f"Error receiving data: {e}")
-                break
-        
-        sock.close()
-        return responses
+                print(f"Error receiving response: {e}")
+            
+            return None
     except Exception as e:
         print(f"Error connecting to server: {e}")
         return None
@@ -84,25 +77,22 @@ def main():
     
     # Send ClientHello and get response
     print(f"Connecting to {hostname}:{port}...")
-    responses = connect_to_server(hostname, port, client_hello)
+    response = connect_to_server(hostname, port, client_hello)
     
-    if responses:
-        print(f"Received {len(responses)} messages in response")
+    if response:
+        content_type, data = response
+        print(f"Received message:")
+        print(f"  Type: {content_type}")
+        print(f"  Length: {len(data)} bytes")
+        print(f"  First 20 bytes: {data[:20].hex()}")
         
-        # Process each received message
-        for i, (content_type, data) in enumerate(responses):
-            print(f"Message #{i+1}:")
-            print(f"  Type: {content_type}")
-            print(f"  Length: {len(data)} bytes")
-            print(f"  First 20 bytes: {data[:20].hex()}")
-            
-            # Special handling for handshake messages
-            if content_type == RECORD_TYPE_HANDSHAKE:
-                print("  This is a handshake message")
-                # In a complete implementation, we would further parse
-                # the handshake message type and contents here
+        # Special handling for handshake messages
+        if content_type == RECORD_TYPE_HANDSHAKE:
+            print("  This is a handshake message")
+            # In a complete implementation, we would further parse
+            # the handshake message type and contents here
     else:
-        print("No responses received or error occurred")
+        print("No response received or error occurred")
     
 if __name__ == "__main__":
     main()

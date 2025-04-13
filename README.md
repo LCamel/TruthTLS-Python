@@ -46,3 +46,12 @@ read_message() 回傳 integer 的 content_type 和 bytes 的 data
 
 同時修改 client.py 來使用 MessageLayer
 ```
+
+```
+簡化 connect_to_server 的邏輯
+由於我們做出來的 ClientHello 使用的參數都是接收方被規定在 TLS 1.3 必須支援的
+所以在送出 ClientHello 後
+應該會收到 ServerHello
+也就是一個 content type 為 handshake(22) 的 message
+先處理到這邊就好
+```
