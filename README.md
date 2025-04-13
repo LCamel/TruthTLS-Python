@@ -29,3 +29,20 @@ initialize 時給一個 socket
 write_handshake() 給一個 bytes 的 data
 read_record() 回傳 integer 的 type 和 bytes 的 data
 ```
+
+```
+我想要有一個 class MessageLayer
+這個 layer 負責處理 message 與 record 之間的轉換
+而讓 RecordLayer 去負責 record 與 bytes 間的轉換
+
+initialize 時給一個 object RecordLayer
+MessageLayer 有幾個 method
+write_handshake() 給一個 bytes 的 data
+read_message() 回傳 integer 的 content_type 和 bytes 的 data
+
+先不要處理 message 與 record 的多對一或一對多的關係
+先假設是一對一個關係
+也就是從 RecordLayer 讀出來的一個 record 剛好就是一個 message
+
+同時修改 client.py 來使用 MessageLayer
+```
