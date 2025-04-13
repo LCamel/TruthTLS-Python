@@ -12,3 +12,12 @@
 這個 function 接受一個 secp256r1 的 public key 的 input
 return message 表示為 bytes 或 bytearray, 看你實作方便.
 ```
+
+```
+寫一個 client.py
+使用 module cryptography 生出 secp256r1 的 private key 和 public key
+把 public key 表示成 uncompressed 格式的 65 bytes
+使用 tls13_client_hello.py 中的 generate_client_hello 生出 ClientHello message
+送到 www.google.com 443
+並收取 response bytes 看看是否有 ServerHello 回來
+```
