@@ -55,3 +55,52 @@ read_message() 回傳 integer 的 content_type 和 bytes 的 data
 也就是一個 content type 為 handshake(22) 的 message
 先處理到這邊就好
 ```
+
+
+後來多下了一些 prompt 走上了叉路. revert 回先前的版本.
+
+認清: 我們維持一個小的規模
+沒有要完整支援整個 TLS 1.3
+我們沒有要支援 Hello Retry Request
+我們也沒有要送出多餘的 extension
+因此 server 也不可以(MUST NOT)送一些我們不想處理的 extension 回來.
+```
+Implementations MUST NOT send extension responses if the remote
+endpoint did not send the corresponding extension requests, with the
+exception of the "cookie" extension in the HelloRetryRequest.
+```
+所以我們只要 parse 少部分的 extension 就好.
+
+"理論上"我們還應該送 "unsupported_extension" alert. (TODO)
+
+
+如果想成一個大的 handshake "block", 這個 block 應該有什麼輸出?
+因為我們所有的實作都鎖死了, 不會隨 handshake 而變, 所以等於只有產生 DH shared secret.
+或者說由 handshake "agent" 幫我們出面交涉, 回來拿出 shared secret.
+
+或者更複雜一些: 拿回一個裝載好的 KeySchedule 物件. 因為後面還需要前面的 transcript (or transcript hasher)
+精確一些是 master secret 和 update 到一半的 hash_obj
+
+```
+RecordLayer 的責任:
+讓上層可以讀出/寫入一個 record, 也就是 (type, data bytes) pair
+
+MessageLayer 的責任:
+讓上層可以讀出/寫入一個 message, 也就是 (type, data bytes) pair
+負責使用上層設定的 write_key / peer_write_key 來加解密
+對 key schedule 並不了解.
+
+function client_handshake(key_schedule, record_layer) 的責任:
+完成 handshake, 更新 key_schedule
+過程中會:
+發送 ClientHello
+接收 ServerHello
+發送 client Finished
+而接收 ServerHello 後, 會從中取出 ECDHE 的 DH peer public key, 計算出 DH shared secret, 設定給 key_schedule
+並且會更新 transcript, 計算出 handshake traffic secret, 設定給 record_layer
+
+client.py 中 import 在 external/tlslite-ng/key_schedule.py 裡面的已經實作好的 class KeySchedule 來使用.
+
+幫我修改 message_layer.py 和 client.py, 其他檔案不動.
+client_handshake 加在 client.py 裡面.
+```

@@ -42,6 +42,17 @@ class RecordLayer:
         record = self._create_record(RECORD_TYPE_HANDSHAKE, data)
         self.socket.sendall(record)
     
+    def write_record(self, record_type, data):
+        """
+        Write a record of any type to the socket.
+        
+        Args:
+            record_type (int): The type of record (e.g., handshake, application_data)
+            data (bytes): The record data
+        """
+        record = self._create_record(record_type, data)
+        self.socket.sendall(record)
+    
     def read_record(self):
         """
         Read a TLS record from the socket.
