@@ -58,7 +58,7 @@ class MessageLayer:
         """
         if not self.is_encrypted or self.write_key is None:
             # If encryption is not enabled yet, write plaintext
-            self.record_layer.write_handshake(data)
+            self.record_layer.write_record(RECORD_TYPE_HANDSHAKE, data)
         else:
             # Encrypt the handshake message
             encrypted_data = self._encrypt_data(data, TLS13_CONTENT_TYPE_HANDSHAKE)

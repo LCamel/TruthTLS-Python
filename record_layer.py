@@ -32,16 +32,6 @@ class RecordLayer:
         """
         self.socket = socket
     
-    def write_handshake(self, data):
-        """
-        Write a handshake message to the socket.
-        
-        Args:
-            data (bytes): The handshake message data
-        """
-        record = self._create_record(RECORD_TYPE_HANDSHAKE, data)
-        self.socket.sendall(record)
-    
     def write_record(self, record_type, data):
         """
         Write a record of any type to the socket.
