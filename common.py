@@ -1,0 +1,20 @@
+from enum import IntEnum
+
+class ContentType(IntEnum):
+    CHANGE_CIPHER_SPEC = 20
+    ALERT = 21
+    HANDSHAKE = 22
+    APPLICATION_DATA = 23
+
+LEGACY_RECORD_VERSION = 0x0303
+
+class TypeAndBytes:
+    def __init__(self, content_type, data):
+        self.content_type = content_type
+        self.data = data
+        self.length = len(data)
+        self.idx = 0
+
+    def bytes_available(self):
+        return self.length - self.idx
+    
