@@ -2,10 +2,61 @@ import struct
 from common import ContentType, TypeAndBytes, LEGACY_RECORD_VERSION
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+class MessageLayer:
+    def __init__(self, record_layer):
+        self.record_layer = record_layer
+        self.left_over = None
+        self.client_hello_received_or_sent = False
+        self.peer_finished_received = False
+
+
+    def read_message(self):
+        record: TypeAndBytes
+        if self.left_over is not None:
+            record = self.left_over
+            self.left_over = None
+        else:
+            record = self.read_record()
+
+        if record.content_type == ContentType.ALERT:
+            if len(record.data) != 2:
+                raise ValueError(f"Invalid ALERT length: {len(record.data)}")
+            return record
+        elif record.content_type == ContentType.APPLICATION_DATA:
+            return record
+        elif record.content_type == ContentType.HANDSHAKE:
+            if len(record.data) == 0:
+                raise ValueError("Expecting a non-empty HANDSHAKE message")
+            handshake_header, record = self._read_n_bytes(record, 4)
+            handshake_length = int.from_bytes(handshake_header[1:4], 'big')
+            handshake_body, record = self._read_n_bytes(record, handshake_length)
+            
+            if record.bytes_available() > 0:
+                self.left_over = record
+            return TypeAndBytes(ContentType.HANDSHAKE, handshake_header + handshake_body)
+        else:
+            raise ValueError(f"Unexpected content type: {record.content_type}")
+
+
+    def _read_n_bytes(self, record, n) -> bytes:
+        backup = self.record_layer.allow_change_cipher_spec
+        self.record_layer.allow_change_cipher_spec = False
+
+        data = b''
+        while len(data) < n:
+            if record.available_bytes() <= 0:
+                record = self.record_layer.read_and_maybe_decrypt()
+                if (record.content_type != ContentType.HANDSHAKE or len(record.data) == 0):
+                    raise ValueError("Expecting a non-empty HANDSHAKE message")
+            data += record.read_n_bytes(n - len(data))
+
+        self.record_layer.allow_change_cipher_spec = backup
+        return data, record
+
 class RecordLayer2:
-    def __init__(self, socket):
+    def __init__(self, socket, allow_change_cipher_spec=True):
         self.socket = socket
-        self.allow_change_cipher_spec = True
+        self.allow_change_cipher_spec = allow_change_cipher_spec
 
         self.write_key = None
         self.write_iv = None
@@ -26,9 +77,16 @@ class RecordLayer2:
         self.peer_seq = 0
         self.peer_aes_gcm = AESGCM(peer_write_key)
 
-    def disallow_change_cipher_spec(self):
-        self.allow_change_cipher_spec = False
+    def set_allow_change_cipher_spec(self, allow_change_cipher_spec: bool):
+        self.allow_change_cipher_spec = allow_change_cipher_spec
 
+    # Possible results:
+    # TypeAndBytes
+    #   type: ALERT / HANDSHAKE / APPLICATION_DATA (no CHANGE_CIPHER_SPEC)
+    #   data: bytes (length might be zero)
+    # Exceptions: 
+    # - ValueError: unexpected message
+    # - ConnectionError
     def read_and_maybe_decrypt(self) -> TypeAndBytes:
         while True:
             content_type = self._read_n_bytes(1)[0]
@@ -77,7 +135,9 @@ class RecordLayer2:
         self.peer_seq += 1
         
         aad = struct.pack('>BHH', ContentType.APPLICATION_DATA, LEGACY_RECORD_VERSION, len(ciphertext))        
-        decrypted = self.peer_aes_gcm.decrypt(nonce, ciphertext, aad)        
+        decrypted = self.peer_aes_gcm.decrypt(nonce, ciphertext, aad)
+        print(f"ciphertext: {ciphertext.hex()}")
+        print(f"decrypted: {decrypted.hex()}")        
         return decrypted
     
     def _calc_nonce(self) -> bytes:
@@ -130,6 +190,9 @@ if __name__ == "__main__":
         b"",
         12
     )
+    print(f"server_traffic_secret: {server_traffic_secret.hex()}")
+    print(f"server_key: {server_key.hex()}")
+    print(f"server_iv: {server_iv.hex()}")
 
 
     print("ENCRYPTED_EXTENSIONS")
@@ -157,7 +220,7 @@ if __name__ == "__main__":
     print(len(type_and_bytes.data))
     print(type_and_bytes.data.hex())
 
-    record_layer.disallow_change_cipher_spec()
+    record_layer.set_allow_change_cipher_spec(False)
 
     server_traffic_secret = bytes.fromhex("51e2ad8e757e3a9c10ed1953963652386ffe1286bcdbfe61e9e27633c6d63488")
     server_key = key_funcs.hkdf_expand_label(
