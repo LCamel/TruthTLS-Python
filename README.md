@@ -130,3 +130,27 @@ INTERFACE=en0
 
 注意: 我連接的 port 不一定是 443, 也可能是 4433 之類的其他 port
 ```
+
+```
+我想要一個 class RecordLayer
+construct 時會給一個 function get_bytes(n: int) -> bytes
+
+有一個 member function get_record() -> TypeAndBytes 
+會從 get_bytes() 的內容中讀取一個 TLS 1.3 的 record
+並檢查 type 是否在合法的 ContentType 中
+version 不檢查
+
+不用註解. 進量少換行.
+```
+
+```
+寫一段程式, 讀取 stdin, 然後用 RecordLayer parse
+對每個 record 印出 type and size
+```
+
+比對這兩個 output, 看來是正確的
+```
+./parse_records.py < ./captures/e1/e1.from
+
+tshark -r e1.pcap -o 'tls.keylog_file:e1.keylog' -O tls -Y 'tls.record && tcp.srcport==443' |grep -A 3 'Record Layer'
+```

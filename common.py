@@ -18,3 +18,13 @@ class TypeAndBytes:
     def bytes_available(self):
         return self.length - self.idx
     
+    def read_n_bytes(self, n):
+        end = self.idx + n
+        if end > self.length:
+            end = self.length
+        result = self.data[self.idx:end]
+        self.idx = end
+        return result
+    
+    def size(self):
+        return self.data.size()
