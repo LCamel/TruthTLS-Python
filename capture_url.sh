@@ -30,7 +30,7 @@ cd "$DIR" || exit 1
 
 # Start capturing network traffic
 echo "Starting tcpdump capture on interface $INTERFACE..."
-tcpdump -i "$INTERFACE" -w "${PREFIX}.pcap" "host $HOSTNAME and port $PORT" -U &
+tcpdump -s 0 -i "$INTERFACE" -w "${PREFIX}.pcap" "host $HOSTNAME and port $PORT" -U &
 TCPDUMP_PID=$!
 
 # Wait a moment for tcpdump to start
@@ -56,22 +56,32 @@ wait "$TCPDUMP_PID" 2>/dev/null
 echo "Processing with tcpflow..."
 tcpflow -r "${PREFIX}.pcap" -o .
 
-# Rename tcpflow files to more meaningful names if possible
-# Look for files that match the pattern
-TCPFLOW_FILES=$(find . -name "*${PORT}-*" -o -name "*-${PORT}*")
-for file in $TCPFLOW_FILES; do
-    if [[ "$file" == *"${PORT}-"* ]]; then
-        # This is data sent to the server
-        cp "$file" "${PREFIX}.to"
-    elif [[ "$file" == *"-${PORT}"* ]]; then
-        # This is data received from the server
-        cp "$file" "${PREFIX}.from"
+# Find tcpflow output files
+echo "Processing tcpflow files..."
+# Look for files that match the pattern of tcpflow output
+for file in $(find . -type f -name "[0-9]*.[0-9]*.[0-9]*.[0-9]*.[0-9]*-[0-9]*.[0-9]*.[0-9]*.[0-9]*.[0-9]*"); do
+    # Extract source and destination from filename
+    if [[ "$file" =~ ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\.([0-9]+)-([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\.([0-9]+) ]]; then
+        SRC_IP="${BASH_REMATCH[1]}"
+        SRC_PORT="${BASH_REMATCH[2]}"
+        DST_IP="${BASH_REMATCH[3]}"
+        DST_PORT="${BASH_REMATCH[4]}"
+        
+        # If destination port matches server port, this is client to server traffic
+        if [[ "$DST_PORT" == "00$PORT" || "$DST_PORT" == "0$PORT" || "$DST_PORT" == "$PORT" ]]; then
+            echo "Found client->server traffic: $file"
+            cp "$file" "${PREFIX}.to"
+        # If source port matches server port, this is server to client traffic
+        elif [[ "$SRC_PORT" == "00$PORT" || "$SRC_PORT" == "0$PORT" || "$SRC_PORT" == "$PORT" ]]; then
+            echo "Found server->client traffic: $file"
+            cp "$file" "${PREFIX}.from"
+        fi
     fi
 done
 
 echo "Capture complete. Files saved to $DIR:"
 echo "- ${PREFIX}.pcap: Raw packet capture"
-echo "- ${PREFIX}.to: Data sent to server"
-echo "- ${PREFIX}.from: Data received from server"
+echo "- ${PREFIX}.to: Data sent to server (if found)"
+echo "- ${PREFIX}.from: Data received from server (if found)"
 echo "- ${PREFIX}.keylog: TLS key log"
 echo "- ${PREFIX}.response: Response content"

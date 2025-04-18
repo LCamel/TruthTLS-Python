@@ -29,7 +29,7 @@
       <command_line>command line to be provided</command_line>
       <uid>501</uid>
       <username>lcamel</username>
-      <start_time>2025-04-18T04:04:01Z</start_time>
+      <start_time>2025-04-18T07:16:10Z</start_time>
     </execution_environment>
   </creator>
   <configuration>
@@ -37,14 +37,14 @@
   <tdelta>0</tdelta>
   <configuration>
     <fileobject>
-      <filename>192.168.086.027.64948-023.192.228.084.00443</filename>
-      <filesize>718</filesize>
-      <tcpflow startime='2025-04-18T04:03:58.808967Z' endtime='2025-04-18T04:03:59.306991Z' mac_daddr='70:3a:cb:e7:a3:75' mac_saddr='aa:1e:58:4b:8c:2c' family='2' src_ipn='192.168.86.27' dst_ipn='23.192.228.84' srcport='64948' dstport='443' packets='10' len='1390' />
+      <filename>192.168.086.027.50591-188.166.045.161.00443</filename>
+      <filesize>524</filesize>
+      <tcpflow startime='2025-04-18T07:16:06.706635Z' endtime='2025-04-18T07:16:08.588844Z' mac_daddr='70:3a:cb:e7:a3:75' mac_saddr='aa:1e:58:4b:8c:2c' family='2' src_ipn='192.168.86.27' dst_ipn='188.166.45.161' srcport='50591' dstport='443' packets='23' len='2042' />
     </fileobject>
     <fileobject>
-      <filename>023.192.228.084.00443-192.168.086.027.64948</filename>
-      <filesize>4958</filesize>
-      <tcpflow startime='2025-04-18T04:03:58.963689Z' endtime='2025-04-18T04:03:59.457717Z' mac_daddr='aa:1e:58:4b:8c:2c' mac_saddr='70:3a:cb:e7:a3:75' family='2' src_ipn='23.192.228.84' dst_ipn='192.168.86.27' srcport='443' dstport='64948' packets='11' len='5692' />
+      <filename>188.166.045.161.00443-192.168.086.027.50591</filename>
+      <filesize>94262</filesize>
+      <tcpflow startime='2025-04-18T07:16:06.986076Z' endtime='2025-04-18T07:16:08.931663Z' mac_daddr='aa:1e:58:4b:8c:2c' mac_saddr='70:3a:cb:e7:a3:75' family='2' src_ipn='188.166.45.161' dst_ipn='192.168.86.27' srcport='443' dstport='50591' packets='72' len='99022' />
     </fileobject>
   </configuration>
   <summary />
@@ -52,16 +52,16 @@
   <max_open_flows>2</max_open_flows>
   <total_flows>2</total_flows>
   <flow_map_size>0</flow_map_size>
-  <total_packets>21</total_packets>
+  <total_packets>95</total_packets>
   <rusage>
-    <utime>0.006153</utime>
-    <stime>0.007833</stime>
-    <maxrss>2473984</maxrss>
-    <minflt>289</minflt>
-    <majflt>30</majflt>
+    <utime>0.005765</utime>
+    <stime>0.006474</stime>
+    <maxrss>3276800</maxrss>
+    <minflt>381</minflt>
+    <majflt>4</majflt>
     <nswap>0</nswap>
     <inblock>0</inblock>
     <oublock>0</oublock>
-    <clocktime>0.005567</clocktime>
+    <clocktime>0.006422</clocktime>
   </rusage>
 </dfxml>
