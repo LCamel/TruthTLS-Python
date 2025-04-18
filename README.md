@@ -104,3 +104,29 @@ client.py 中 import 在 external/tlslite-ng/key_schedule.py 裡面的已經實�
 幫我修改 message_layer.py 和 client.py, 其他檔案不動.
 client_handshake 加在 client.py 裡面.
 ```
+
+```
+我系統已經安裝了這些軟體
+- 不需要 sudo 的 tcpdump
+- tcpflow
+- CURL_BIN=/opt/homebrew/Cellar/curl/8.12.1/bin/curl
+
+幫我寫一個 capture_url.sh
+給兩個參數
+第一個是 url
+第二個是 directory, 把目錄建出來, 把過程和結果的檔案都放在裡面
+
+INTERFACE=en0
+用 tcpdump 捕捉 INTERFACE
+連接 url, 並且只使用 TLS 1.3, 禁用更低的版本. 使用 HTTP/1.1. 不用顯示內容在畫面上.
+
+我想看到幾個檔案
+{prefix}.pcap
+{prefix}.to 和 {prefix}.from (用 tcpflow 分離)
+{prefix}.keylog
+
+使用 tcpdump 時要盡早將內容存檔
+結束 tcpdump 前要等一下
+
+注意: 我連接的 port 不一定是 443, 也可能是 4433 之類的其他 port
+```
