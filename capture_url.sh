@@ -41,7 +41,7 @@ export SSLKEYLOGFILE="${PWD}/${PREFIX}.keylog"
 
 # Connect to the URL with TLS 1.3 only and HTTP/1.1
 echo "Connecting to $URL..."
-"$CURL_BIN" --tlsv1.3 --http1.1 --tls13-ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256 -o "${PREFIX}.response" -s "$URL"
+"$CURL_BIN" --tlsv1.3 --http1.1 --tls13-ciphers TLS_AES_128_GCM_SHA256: -o "${PREFIX}.response" -s "$URL"
 
 # Wait a moment before stopping tcpdump to ensure all packets are captured
 echo "Waiting for any remaining packets..."
