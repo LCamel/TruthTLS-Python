@@ -77,8 +77,8 @@ class RecordLayer:
         return result, record
 
 
-import struct
 class RecordDecryptor:
+    AAD_PREFIX = bytes([ContentType.APPLICATION_DATA]) + LEGACY_RECORD_VERSION.to_bytes(2, byteorder='big')
     def __init__(self, traffic_secret, hkdf_expand_label, aead_class, key_length, iv_length):
         key = hkdf_expand_label(traffic_secret, b"key", b"", key_length)
         self.aead = aead_class(key)
@@ -89,7 +89,7 @@ class RecordDecryptor:
         padded_seq = self.seq.to_bytes(len(self.iv), 'big')
         self.seq += 1
         nonce = bytes(a ^ b for a, b in zip(self.iv, padded_seq))
-        aad = struct.pack('>BHH', ContentType.APPLICATION_DATA, LEGACY_RECORD_VERSION, len(ciphertext))
+        aad = self.AAD_PREFIX + len(ciphertext).to_bytes(2, byteorder='big')
         decrypted = self.aead.decrypt(nonce, ciphertext, aad)
         return decrypted
 
