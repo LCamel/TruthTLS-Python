@@ -12,6 +12,8 @@ class RecordLayer:
         return TypeAndBytes(header[0], self.read_bytes(length))
 
     def set_record_decryptor(self, record_decryptor):
+        if self.left_over is not None:
+            raise ValueError("Cannot set record decryptor while left_over is not None")
         self.record_decryptor = record_decryptor
 
     def read_plaintext(self):
