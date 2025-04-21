@@ -9,10 +9,17 @@ class RecordLayer:
     def read_record(self):
         header = self.read_bytes(5)
         content_type = header[0]
-        ContentType(content_type) # validation
         length = (header[3] << 8) | header[4]
-        if length > 16384:
-            raise ValueError(f"Invalid length: {length} > 16384 (2^14)")
+
+        if content_type in (ContentType.CHANGE_CIPHER_SPEC, ContentType.ALERT, ContentType.HANDSHAKE):
+            if length > 16384:
+                raise ValueError(f"Invalid TLSPlaintext length: {length} > 2^14")
+        elif content_type == ContentType.APPLICATION_DATA:
+            if length > 16384 + 256:
+                raise ValueError(f"Invalid TLSCiphertext length: {length} > 2^14 + 256")
+        else:
+            raise ValueError(f"Invalid content type: {content_type}")
+        
         return TypeAndBytes(content_type, self.read_bytes(length))
 
     def set_record_decryptor(self, record_decryptor):
