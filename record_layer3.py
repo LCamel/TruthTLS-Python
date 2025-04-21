@@ -1,13 +1,13 @@
 from common import ContentType, TypeAndBytes, LEGACY_RECORD_VERSION
 
 class RecordLayer:
-    def __init__(self, read_bytes):
-        self.read_bytes = read_bytes
+    def __init__(self, read_bytes_func):
+        self.read_bytes_func = read_bytes_func
         self.record_decryptor = None
         self.left_over = None
 
     def read_record(self):
-        header = self.read_bytes(5)
+        header = self.read_bytes_func(5)
         content_type = header[0]
         length = (header[3] << 8) | header[4]
 
@@ -20,7 +20,7 @@ class RecordLayer:
         else:
             raise ValueError(f"Invalid content type: {content_type}")
         
-        return TypeAndBytes(content_type, self.read_bytes(length))
+        return TypeAndBytes(content_type, self.read_bytes_func(length))
 
     def set_record_decryptor(self, record_decryptor):
         if self.left_over is not None:
@@ -69,7 +69,7 @@ class RecordLayer:
 
         # Now we have a handshake record. Any additional records we read are expected to be HANDSHAKE records.
         header, record = self._read_n_bytes(record, 4)
-        length = int.from_bytes(header[1:4], 'big')
+        length = int.from_bytes(header[1:4], 'big') # we may add our own length constraint
         body, record = self._read_n_bytes(record, length)
         
         self.left_over = record if record.bytes_available() > 0 else None

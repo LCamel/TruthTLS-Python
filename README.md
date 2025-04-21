@@ -154,3 +154,21 @@ version 不檢查
 
 tshark -r e1.pcap -o 'tls.keylog_file:e1.keylog' -O tls -Y 'tls.record && tcp.srcport==443' |grep -A 3 'Record Layer'
 ```
+
+
+```
+(venv) lcamel@macbookpro TrustTLS-Python % echo $PYTHONPATH
+./external/tlslite-ng
+(venv) lcamel@macbookpro TrustTLS-Python % python record_layer3.py < captures/long/long.from
+Plaintext: 22 0200007603035b42eb9881bd9ec586b854061531fb3494065a5883f837ac82e51b16a64f205920de8d227ecf1006bd6d551f27f07f6e43ce90e9da2f39cc3398ec05ad42211786130100002e002b0002030400330024001d0020fa768c486e2565942c52cabdfd76a4fbed8d9d1680fdc90907064f5faf1a1a43
+Plaintext: 20 01
+========================================
+Plaintext: 22 21 08000011000f0010000b000908687474702f312e
+Plaintext: 22 93178 0b016bf600016bf200052c3082052830820310a0 <=== long
+Plaintext: 22 520 0f000204080402006b4950bf0c127c30c438f4db
+Plaintext: 22 36 14000020411cc17e830ea69385b03b80b81da280
+========================================
+Plaintext: 22 130 0400007e00093a80000000000000711b4c0e8bea
+Plaintext: 23 280 485454502f312e3120323030204f4b0d0a416363
+Plaintext: 21 2 0100
+```
