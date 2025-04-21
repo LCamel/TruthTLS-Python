@@ -5,6 +5,7 @@ class RecordLayer:
         self.read_bytes_func = read_bytes_func
         self.record_decryptor = None
         self.left_over = None
+        self.allow_change_cipher_spec = True # for client side  TODO: server side
 
     def read_record(self):
         header = self.read_bytes_func(5)
@@ -87,6 +88,23 @@ class RecordLayer:
                 break
         return result, record
 
+    def read_without_change_cipher_spec(self):        
+        while True:
+            record = self.read_reassembled()
+            if record.content_type != ContentType.CHANGE_CIPHER_SPEC:
+                if record.content_type == ContentType.HANDSHAKE and record.data[0] == 20: # peer Finished
+                    self.allow_change_cipher_spec = False
+                return record
+            else:
+                if not self.allow_change_cipher_spec:
+                    raise ValueError("Unexpected CHANGE_CIPHER_SPEC message")
+                else:
+                    if record.data != b'\x01':
+                        raise ValueError("Invalid CHANGE_CIPHER_SPEC message")
+                    # MUST simply drop it without further processing
+    
+    def read(self):
+        return self.read_without_change_cipher_spec()
 
 class RecordDecryptor:
     AAD_PREFIX = bytes([ContentType.APPLICATION_DATA]) + LEGACY_RECORD_VERSION.to_bytes(2, byteorder='big')
@@ -112,14 +130,14 @@ if __name__ == "__main__":
         if (len(data) < n):
             raise ValueError("Not enough data")
         return data
+    
+    def show(record):
+        print(f"ContentType: {record.content_type}, Length: {len(record.data)}, Data: {record.data.hex()}")
 
     record_layer = RecordLayer(read_bytes)
-    plaintext = record_layer.read_reassembled()
-    print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}") # ServerHello
-    plaintext = record_layer.read_reassembled()
-    print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}") # ChangeCipherSpec
-
-
+    record = record_layer.read()
+    show(record) # ServerHello
+    
     from key_schedule_functions import KeyScheduleFunctions
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     import hashlib
@@ -135,8 +153,8 @@ if __name__ == "__main__":
     record_layer.set_record_decryptor(record_decryptor)
 
     for i in range(4):
-        plaintext = record_layer.read_reassembled()
-        print(f"Plaintext: {plaintext.content_type} {plaintext.length} {plaintext.data.hex()[:40]}")
+        record = record_layer.read()
+        show(record)
 
     print("====" * 10)
     record_decryptor = RecordDecryptor(
@@ -149,5 +167,5 @@ if __name__ == "__main__":
     record_layer.set_record_decryptor(record_decryptor)
 
     for i in range(3):
-        plaintext = record_layer.read_reassembled()
-        print(f"Plaintext: {plaintext.content_type} {plaintext.length} {plaintext.data.hex()[:40]}")
+        record = record_layer.read()
+        show(record)
