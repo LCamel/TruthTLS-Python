@@ -44,7 +44,7 @@ class RecordLayer:
 
             return TypeAndBytes(content_type, content)
         
-    def read_assembled(self):
+    def read_reassembled(self):
         assert self.left_over is None or (self.left_over.content_type == ContentType.HANDSHAKE and self.left_over.bytes_available() > 0)
 
         if self.left_over is None:
@@ -101,9 +101,9 @@ if __name__ == "__main__":
         return data
 
     record_layer = RecordLayer(read_bytes)
-    plaintext = record_layer.read_assembled()
+    plaintext = record_layer.read_reassembled()
     print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}") # ServerHello
-    plaintext = record_layer.read_assembled()
+    plaintext = record_layer.read_reassembled()
     print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}") # ChangeCipherSpec
 
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     record_layer.set_record_decryptor(record_decryptor)
 
     for i in range(4):
-        plaintext = record_layer.read_assembled()
+        plaintext = record_layer.read_reassembled()
         print(f"Plaintext: {plaintext.content_type} {plaintext.length} {plaintext.data.hex()[:40]}")
 
     print("====" * 10)
@@ -136,5 +136,5 @@ if __name__ == "__main__":
     record_layer.set_record_decryptor(record_decryptor)
 
     for i in range(3):
-        plaintext = record_layer.read_assembled()
+        plaintext = record_layer.read_reassembled()
         print(f"Plaintext: {plaintext.content_type} {plaintext.length} {plaintext.data.hex()[:40]}")
