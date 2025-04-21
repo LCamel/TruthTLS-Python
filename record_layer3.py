@@ -8,8 +8,12 @@ class RecordLayer:
 
     def read_record(self):
         header = self.read_bytes(5)
+        content_type = header[0]
+        ContentType(content_type) # validation
         length = (header[3] << 8) | header[4]
-        return TypeAndBytes(header[0], self.read_bytes(length))
+        if length > 16384:
+            raise ValueError(f"Invalid length: {length} > 16384 (2^14)")
+        return TypeAndBytes(content_type, self.read_bytes(length))
 
     def set_record_decryptor(self, record_decryptor):
         if self.left_over is not None:
