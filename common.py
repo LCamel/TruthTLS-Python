@@ -26,5 +26,5 @@ class TypeAndBytes:
         self.idx = end
         return result
     
-    def size(self):
-        return self.data.size()
+    def length(self):
+        return len(self.data)

@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dfxml xmloutputversion='1.0'>
+  <metadata 
+  xmlns='http://afflib.org/tcpflow/' 
+  xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' 
+  xmlns:dc='http://purl.org/dc/elements/1.1/'>
+    <dc:type>Feature Extraction</dc:type>
+  </metadata>
+  <creator version='1.0'>
+    <program>TCPFLOW</program>
+    <version>1.6.1</version>
+    <build_environment>
+      <compiler>4.2.1 (Apple LLVM 16.0.0 (clang-1600.0.26.3))</compiler>
+      <CPPFLAGS> -DUTC_OFFSET=+0000</CPPFLAGS>
+      <CFLAGS>-g -g -O3 -MD -Wpointer-arith -Wmissing-declarations -Wmissing-prototypes -Wshadow -Wwrite-strings -Wcast-align -Waggregate-return -Wbad-function-cast -Wcast-qual -Wundef -Wredundant-decls -Wdisabled-optimization -Wfloat-equal -Wmultichar -Wc++-compat -Wmissing-noreturn -Wall -Wstrict-prototypes -MD -D_FORTIFY_SOURCE=2 -Wpointer-arith -Wmissing-declarations -Wmissing-prototypes -Wshadow -Wwrite-strings -Wcast-align -Waggregate-return -Wbad-function-cast -Wcast-qual -Wundef -Wredundant-decls -Wdisabled-optimization -Wfloat-equal -Wmultichar -Wc++-compat -Wmissing-noreturn -Wall -Wstrict-prototypes</CFLAGS>
+      <CXXFLAGS>-g -g -O3 -Wall -MD -D_FORTIFY_SOURCE=2 -Wpointer-arith -Wshadow -Wwrite-strings -Wcast-align -Wredundant-decls -Wdisabled-optimization -Wfloat-equal -Wmultichar -Wmissing-noreturn -Woverloaded-virtual -Wsign-promo -funit-at-a-time -Weffc++ -Wno-address-of-packed-member</CXXFLAGS>
+      <LDFLAGS />
+      <LIBS>-lpcap -lbz2 -lexpat -lcrypto -lsqlite3 -lssl -lmd -lcrypto -ldl -lz </LIBS>
+      <compilation_date>2021-02-19T02:53:03</compilation_date>
+      <library name="boost" version="108600"/>
+      <library name="sqlite" version="3.43.2" source_id="2023-10-10 13:08:14 1b37c146ee9ebb7acd0160c0ab1fd11017a419fa8a3187386ed8cb32b709aapl"/>
+    </build_environment>
+    <execution_environment>
+      <os_sysname>Darwin</os_sysname>
+      <os_release>24.3.0</os_release>
+      <os_version>Darwin Kernel Version 24.3.0: Thu Jan  2 20:24:16 PST 2025; root:xnu-11215.81.4~3/RELEASE_ARM64_T6000</os_version>
+      <host>macbookpro.lan</host>
+      <arch>arm64</arch>
+      <command_line>command line to be provided</command_line>
+      <uid>501</uid>
+      <username>lcamel</username>
+      <start_time>2025-04-21T02:23:04Z</start_time>
+    </execution_environment>
+  </creator>
+  <configuration>
+  </configuration>
+  <tdelta>0</tdelta>
+  <configuration>
+    <fileobject>
+      <filename>192.168.086.027.64799-188.166.045.161.00443</filename>
+      <filesize>730</filesize>
+      <tcpflow startime='2025-04-21T02:23:00.216691Z' endtime='2025-04-21T02:23:01.979974Z' mac_daddr='70:3a:cb:e7:a3:75' mac_saddr='aa:1e:58:4b:8c:2c' family='2' src_ipn='192.168.86.27' dst_ipn='188.166.45.161' srcport='64799' dstport='443' packets='25' len='2404' />
+    </fileobject>
+    <fileobject>
+      <filename>188.166.045.161.00443-192.168.086.027.64799</filename>
+      <filesize>94564</filesize>
+      <tcpflow startime='2025-04-21T02:23:00.535665Z' endtime='2025-04-21T02:23:02.254043Z' mac_daddr='aa:1e:58:4b:8c:2c' mac_saddr='70:3a:cb:e7:a3:75' family='2' src_ipn='188.166.45.161' dst_ipn='192.168.86.27' srcport='443' dstport='64799' packets='74' out_of_order_count='1' len='99456' />
+    </fileobject>
+  </configuration>
+  <summary />
+  <open_fds_at_end>0</open_fds_at_end>
+  <max_open_flows>2</max_open_flows>
+  <total_flows>2</total_flows>
+  <flow_map_size>0</flow_map_size>
+  <total_packets>99</total_packets>
+  <rusage>
+    <utime>0.005494</utime>
+    <stime>0.007030</stime>
+    <maxrss>3375104</maxrss>
+    <minflt>361</minflt>
+    <majflt>30</majflt>
+    <nswap>0</nswap>
+    <inblock>0</inblock>
+    <oublock>0</oublock>
+    <clocktime>0.004018</clocktime>
+  </rusage>
+</dfxml>

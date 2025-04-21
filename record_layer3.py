@@ -4,6 +4,7 @@ class RecordLayer:
     def __init__(self, read_bytes):
         self.read_bytes = read_bytes
         self.record_decryptor = None
+        self.left_over = None
 
     def read_record(self):
         # Read record header (5 bytes: type[1] + version[2] + length[2])
@@ -65,9 +66,36 @@ class RecordLayer:
                 raise ValueError("Unexpected CHANGE_CIPHER_SPEC in decrypted data")
 
             return TypeAndBytes(content_type, content)
+        
+    def read_assembled(self):
+        assert self.left_over is None or (self.left_over.content_type == ContentType.HANDSHAKE and self.left_over.bytes_available() > 0)
 
+        if self.left_over is None:
+            record = record_layer.read_plaintext()
+            if record.content_type != ContentType.HANDSHAKE:
+                return record
+        else:
+            record = self.left_over
 
+        # Now we have a handshake record. Any additional records we read are expected to be HANDSHAKE records.
+        header, record = self._read_n_bytes(record, 4)
+        length = int.from_bytes(header[1:4], 'big')
+        body, record = self._read_n_bytes(record, length)
+        
+        self.left_over = record if record.bytes_available() > 0 else None
+        return TypeAndBytes(ContentType.HANDSHAKE, header + body)
 
+    def _read_n_bytes(self, record, n):
+        result = b''
+        while True:
+            result += record.read_n_bytes(n - len(result))
+            if len(result) < n:
+                record = self.read_plaintext()
+                if record.content_type != ContentType.HANDSHAKE:
+                    raise ValueError("Handshake messages MUST NOT be interleaved with other record types.")
+            else:
+                break
+        return result, record
 
 
 import struct
@@ -96,9 +124,9 @@ if __name__ == "__main__":
         return data
 
     record_layer = RecordLayer(read_bytes)
-    plaintext = record_layer.read_plaintext()
+    plaintext = record_layer.read_assembled()
     print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}") # ServerHello
-    plaintext = record_layer.read_plaintext()
+    plaintext = record_layer.read_assembled()
     print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}") # ChangeCipherSpec
 
 
@@ -108,7 +136,7 @@ if __name__ == "__main__":
 
     print("====" * 10)
     record_decryptor = RecordDecryptor(
-        traffic_secret=bytes.fromhex("f116b50d7cf32d2cc5999e93afe3706b549a1198bff1e35e259e752a81b36479"),
+        traffic_secret=bytes.fromhex("9c0e9fbd6b130655ddd885bca6777cbb64f43f0882d2988caaf617a911dc5899"),
         hkdf_expand_label=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
         aead_class=AESGCM,
         key_length=16,
@@ -117,12 +145,12 @@ if __name__ == "__main__":
     record_layer.set_record_decryptor(record_decryptor)
 
     for i in range(4):
-        plaintext = record_layer.read_plaintext()
-        print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}")
+        plaintext = record_layer.read_assembled()
+        print(f"Plaintext: {plaintext.content_type} {plaintext.length} {plaintext.data.hex()[:40]}")
 
     print("====" * 10)
     record_decryptor = RecordDecryptor(
-        traffic_secret=bytes.fromhex("6adf51694925b4f9a9e25b0543f8eab0466e14a24848cb8aec42f706378bde36"),
+        traffic_secret=bytes.fromhex("acf8dd4819144487a198b3ec89264f5253e586d0e9983fde08f81e826416f1e2"),
         hkdf_expand_label=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
         aead_class=AESGCM,
         key_length=16,
@@ -130,6 +158,6 @@ if __name__ == "__main__":
     )
     record_layer.set_record_decryptor(record_decryptor)
 
-    for i in range(4):
-        plaintext = record_layer.read_plaintext()
-        print(f"Plaintext: {plaintext.content_type} {plaintext.data.hex()}")
+    for i in range(3):
+        plaintext = record_layer.read_assembled()
+        print(f"Plaintext: {plaintext.content_type} {plaintext.length} {plaintext.data.hex()[:40]}")
