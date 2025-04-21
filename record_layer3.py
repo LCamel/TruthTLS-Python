@@ -7,32 +7,9 @@ class RecordLayer:
         self.left_over = None
 
     def read_record(self):
-        # Read record header (5 bytes: type[1] + version[2] + length[2])
         header = self.read_bytes(5)
-        if len(header) < 5:
-            raise ValueError("Incomplete TLS record header")
-
-        # Parse header
-        content_type = header[0]
-        version = (header[1] << 8) | header[2]
         length = (header[3] << 8) | header[4]
-
-        # Check if content_type is valid
-        if content_type not in [
-            ContentType.CHANGE_CIPHER_SPEC,
-            ContentType.ALERT,
-            ContentType.HANDSHAKE,
-            ContentType.APPLICATION_DATA
-        ]:
-            raise ValueError(f"Invalid content type: {content_type}")
-
-        # Read record data
-        data = self.read_bytes(length)
-        if len(data) < length:
-            raise ValueError("Incomplete TLS record data")
-
-        # Return the record as TypeAndBytes
-        return TypeAndBytes(content_type, data)
+        return TypeAndBytes(header[0], self.read_bytes(length))
 
     def set_record_decryptor(self, record_decryptor):
         self.record_decryptor = record_decryptor
