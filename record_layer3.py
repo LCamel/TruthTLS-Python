@@ -1,11 +1,14 @@
-from common import ContentType, TypeAndBytes, LEGACY_RECORD_VERSION
+from common import ContentType, TypeAndBytes, LEGACY_RECORD_VERSION_BYTES
 
 class RecordLayer:
-    def __init__(self, read_bytes_func):
+    def __init__(self, read_bytes_func, write_bytes_func):
         self.read_bytes_func = read_bytes_func
         self.record_decryptor = None
         self.left_over = None
         self.allow_change_cipher_spec = True # for client side  TODO: server side
+
+        self.write_bytes_func = write_bytes_func
+        self.record_encryptor = None        
 
     def read_record(self):
         header = self.read_bytes_func(5)
@@ -27,6 +30,8 @@ class RecordLayer:
         if self.left_over is not None:
             raise ValueError("Cannot set record decryptor while left_over is not None")
         self.record_decryptor = record_decryptor
+    def set_record_encryptor(self, record_encryptor):
+        self.record_encryptor = record_encryptor
 
     def read_plaintext(self):
         record = self.read_record()
@@ -62,7 +67,7 @@ class RecordLayer:
         assert self.left_over is None or (self.left_over.content_type == ContentType.HANDSHAKE and self.left_over.bytes_available() > 0)
 
         if self.left_over is None:
-            record = record_layer.read_plaintext()
+            record = self.read_plaintext()
             if record.content_type != ContentType.HANDSHAKE:
                 return record
         else:
@@ -106,12 +111,21 @@ class RecordLayer:
     def read(self):
         return self.read_without_change_cipher_spec()
 
+    # I trust the writer    
+    def write(self, type_and_bytes):
+        if self.record_encryptor is None:
+            self.write_bytes_func(bytes([type_and_bytes.content_type]) + LEGACY_RECORD_VERSION_BYTES + len(type_and_bytes.data).to_bytes(2, 'big') + type_and_bytes.data)
+        else:
+            inner = type_and_bytes.data + bytes([type_and_bytes.content_type])
+            ciphertext = self.record_encryptor.encrypt(inner)
+            self.write_bytes_func(bytes([ContentType.APPLICATION_DATA]) + LEGACY_RECORD_VERSION_BYTES + len(ciphertext).to_bytes(2, 'big') + ciphertext)
+
 class RecordDecryptor:
-    AAD_PREFIX = bytes([ContentType.APPLICATION_DATA]) + LEGACY_RECORD_VERSION.to_bytes(2, byteorder='big')
-    def __init__(self, traffic_secret, hkdf_expand_label, aead_class, key_length, iv_length):
-        key = hkdf_expand_label(traffic_secret, b"key", b"", key_length)
+    AAD_PREFIX = bytes([ContentType.APPLICATION_DATA]) + LEGACY_RECORD_VERSION_BYTES
+    def __init__(self, traffic_secret, hkdf_expand_label_func, aead_class, key_length, iv_length):
+        key = hkdf_expand_label_func(traffic_secret, b"key", b"", key_length)
         self.aead = aead_class(key)
-        self.iv = hkdf_expand_label(traffic_secret, b"iv", b"", iv_length)
+        self.iv = hkdf_expand_label_func(traffic_secret, b"iv", b"", iv_length)
         self.seq = 0
 
     def decrypt(self, ciphertext):
@@ -122,7 +136,25 @@ class RecordDecryptor:
         decrypted = self.aead.decrypt(nonce, ciphertext, aad)
         return decrypted
 
+class RecordEncryptor:
+    AAD_PREFIX = bytes([ContentType.APPLICATION_DATA]) + LEGACY_RECORD_VERSION_BYTES
+    def __init__(self, traffic_secret, hkdf_expand_label_func, aead_class, key_length, iv_length):
+        key = hkdf_expand_label_func(traffic_secret, b"key", b"", key_length)
+        self.aead = aead_class(key)
+        self.iv = hkdf_expand_label_func(traffic_secret, b"iv", b"", iv_length)
+        self.seq = 0
 
+    def encrypt(self, plaintext):
+        padded_seq = self.seq.to_bytes(len(self.iv), 'big')
+        self.seq += 1
+        nonce = bytes(a ^ b for a, b in zip(self.iv, padded_seq))
+        # GCM 標籤長度固定為 16 字節
+        aad = self.AAD_PREFIX + (len(plaintext) + 16).to_bytes(2, byteorder='big')
+        ciphertext = self.aead.encrypt(nonce, plaintext, aad)
+        print("computed length:", (len(plaintext) + 16))
+        print("ciphertext length:", len(ciphertext))
+        return ciphertext
+    
 if __name__ == "__main__":
     import sys
     def read_bytes(n):
@@ -145,7 +177,7 @@ if __name__ == "__main__":
     print("====" * 10)
     record_decryptor = RecordDecryptor(
         traffic_secret=bytes.fromhex("9c0e9fbd6b130655ddd885bca6777cbb64f43f0882d2988caaf617a911dc5899"),
-        hkdf_expand_label=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
+        hkdf_expand_label_func=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
         aead_class=AESGCM,
         key_length=16,
         iv_length=12
@@ -159,7 +191,7 @@ if __name__ == "__main__":
     print("====" * 10)
     record_decryptor = RecordDecryptor(
         traffic_secret=bytes.fromhex("acf8dd4819144487a198b3ec89264f5253e586d0e9983fde08f81e826416f1e2"),
-        hkdf_expand_label=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
+        hkdf_expand_label_func=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
         aead_class=AESGCM,
         key_length=16,
         iv_length=12

@@ -90,7 +90,7 @@ echo "使用openssl發送HEAD請求，使用TLS 1.3並限制 extension和僅使�
 #  -quiet
 #cd /Users/lcamel/vc/TruthTLS ; /usr/bin/env /opt/homebrew/Cellar/openjdk/23.0.2/libexec/openjdk.jdk/Contents/Home/bin/java -XX:+ShowCodeDetailsInExceptionMessages -cp /Users/lcamel/vc/TruthTLS/target/classes org.truthtls.Main
 
-python client.py
+python client2.py
 
 # 等待確保捕獲完成
 sleep 2

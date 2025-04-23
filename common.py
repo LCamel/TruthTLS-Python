@@ -7,6 +7,7 @@ class ContentType(IntEnum):
     APPLICATION_DATA = 23
 
 LEGACY_RECORD_VERSION = 0x0303
+LEGACY_RECORD_VERSION_BYTES = LEGACY_RECORD_VERSION.to_bytes(2, byteorder='big')
 
 class TypeAndBytes:
     def __init__(self, content_type, data):

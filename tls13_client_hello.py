@@ -7,6 +7,7 @@ to RFC 8446 and the requirements in tls13_minimal_client_hello.txt.
 
 import struct
 import secrets
+from cryptography.hazmat.primitives import serialization
 
 # Constants for TLS record types and versions
 TLS_HANDSHAKE_TYPE_CLIENT_HELLO = 1
@@ -32,8 +33,14 @@ SIG_ECDSA_SECP256R1_SHA256 = 0x0403  # ecdsa_secp256r1_sha256
 SIG_RSA_PSS_RSAE_SHA256 = 0x0804     # rsa_pss_rsae_sha256
 SIG_RSA_PKCS1_SHA256 = 0x0401        # rsa_pkcs1_sha256
 
+def generate_client_hello(public_key):
+    public_key_bytes = public_key.public_bytes(
+        encoding=serialization.Encoding.X962,
+        format=serialization.PublicFormat.UncompressedPoint
+    )
+    return _generate_client_hello(public_key_bytes)
 
-def generate_client_hello(public_key_bytes):
+def _generate_client_hello(public_key_bytes):
     """
     Generate a TLS 1.3 ClientHello message.
     
@@ -223,13 +230,3 @@ def _add_handshake_header(client_hello_body):
     handshake_length = struct.pack('!I', len(client_hello_body))[1:]  # 3 bytes, drop the first byte
     
     return handshake_type + handshake_length + client_hello_body
-
-
-if __name__ == "__main__":
-    # Example: Generate a ClientHello with a dummy public key (for testing)
-    dummy_public_key = secrets.token_bytes(65)  # Typical size for a secp256r1 public key
-    client_hello = generate_client_hello(dummy_public_key)
-    
-    print(f"Generated ClientHello message of {len(client_hello)} bytes")
-    print("Hex dump of first 32 bytes:")
-    print(' '.join(f'{b:02x}' for b in client_hello[:32]))
