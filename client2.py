@@ -9,6 +9,7 @@ from record_layer3 import RecordLayer, RecordDecryptor, RecordEncryptor
 from tls13_client_hello import generate_client_hello
 from server_hello import extract_server_key_share
 from key_schedule import KeySchedule
+from cipher_suite import TLS_AES_128_GCM_SHA256
 
 def read_write_funcs(sock):
     def read_bytes(n):  
@@ -64,7 +65,7 @@ port = 443            # Replace with the actual port
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((host, port))
 
-record_layer = RecordLayer(*read_write_funcs(client_socket))
+record_layer = RecordLayer(TLS_AES_128_GCM_SHA256, *read_write_funcs(client_socket))
 key_schedule = KeySchedule(sha256)
 read_handshake, write_handshake = read_write_handshake_funcs(record_layer, key_schedule)
 
@@ -79,24 +80,9 @@ server_hello = read_handshake()
 shared_secret = client_calc_ec_shared_secret(private_key, server_hello.data)
 key_schedule.set_DH_shared_secret(shared_secret)
 client_handshake_traffic_secret, server_handshake_traffic_secret = key_schedule.calc_handshake_traffic_secrets()
-record_layer.set_record_decryptor(
-    RecordDecryptor(
-        traffic_secret=server_handshake_traffic_secret,
-        hkdf_expand_label_func=key_schedule.key_funcs.hkdf_expand_label,
-        aead_class=AESGCM,
-        key_length=16,
-        iv_length=12
-    )
-)
-record_layer.set_record_encryptor(
-    RecordEncryptor(
-        traffic_secret=client_handshake_traffic_secret,
-        hkdf_expand_label_func=key_schedule.key_funcs.hkdf_expand_label,
-        aead_class=AESGCM,
-        key_length=16,
-        iv_length=12
-    )
-)
+record_layer.set_decryption_secret(server_handshake_traffic_secret)
+record_layer.set_encryption_secret(client_handshake_traffic_secret)
+
 
 encrypted_extensions = read_handshake()
 print(f"EncryptedExtensions: {encrypted_extensions.data.hex()}")
@@ -109,25 +95,17 @@ record_layer.set_allow_change_cipher_spec(False)
 print(f"server Finished: {server_finished.data.hex()}")
 
 client_application_traffic_secret, server_application_traffic_secret = key_schedule.calc_application_traffic_secrets()
+record_layer.set_decryption_secret(server_application_traffic_secret)
+
 
 client_finished = compute_finished(client_handshake_traffic_secret, key_schedule.transcript, key_schedule.key_funcs)
 write_handshake(TypeAndBytes(ContentType.HANDSHAKE, client_finished))
+record_layer.set_encryption_secret(client_application_traffic_secret)
 
+print("================")
+record_layer.write(TypeAndBytes(ContentType.APPLICATION_DATA, b"GET / HTTP/1.1\r\nHost: example.com\r\n\Connection: close\r\n\r\n"))
+while True:
+    record = record_layer.read_reassembled()
+    print(f"Decrypted message type: {record.content_type}")
+    print(f"Decrypted data: {record.data.hex()}")
 
-# 在計算完 client_finished 之後，生成應用數據加密所需的密鑰
-#client_application_traffic_secret, server_application_traffic_secret = key_schedule.calc_application_traffic_secrets()
-
-# 設置應用數據解密器
-record_layer.set_record_decryptor(
-    RecordDecryptor(
-        traffic_secret=server_application_traffic_secret,
-        hkdf_expand_label_func=key_schedule.key_funcs.hkdf_expand_label,
-        aead_class=AESGCM,
-        key_length=16,
-        iv_length=12
-    )
-)
-# 現在嘗試讀取並解密消息
-record = record_layer.read_reassembled()
-print(f"Decrypted message type: {record.content_type}")
-print(f"Decrypted data: {record.data.hex()}")

@@ -21,7 +21,7 @@ class CipherSuite:
     As defined in RFC 8446, Section 7.1.
     """
     
-    def __init__(self, hash_alg, aead_alg, key_length=16, iv_length=12):
+    def __init__(self, hash_alg, aead_alg, key_length, iv_length, tag_length):
         """
         Initialize the CipherSuite with hash algorithm and AEAD algorithm.
         
@@ -38,6 +38,7 @@ class CipherSuite:
         self.hash_len = hash_alg.digest_size        
         self.key_length = key_length
         self.iv_length = iv_length
+        self.tag_length = tag_length
     
     def hash_func(self, data):
         """
@@ -238,9 +239,4 @@ class CipherSuite:
         """
         return self.aead_alg(key)    
 
-# 預定義的密碼套件實例，方便直接導入
-# TLS_AES_128_GCM_SHA256 為 TLS 1.3 中定義的標準密碼套件，使用:
-# - SHA-256 做為哈希算法
-# - AES-GCM 做為 AEAD 加密算法，使用 128 位元密鑰
-# - 96 位元初始向量
-TLS_AES_128_GCM_SHA256 = CipherSuite(hashes.SHA256, AESGCM, key_length=16, iv_length=12)
+TLS_AES_128_GCM_SHA256 = CipherSuite(hashes.SHA256, AESGCM, key_length=16, iv_length=12, tag_length=16)
