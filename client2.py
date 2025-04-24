@@ -55,10 +55,10 @@ def compute_finished(traffic_secret, transcript, key_schedule_funcs):
     return client_finished_message
 
 
-#host = 'example.com'  # Replace with the actual host
-#port = 443            # Replace with the actual port
-host = 'localhost'
-port = 4433
+host = 'example.com'  # Replace with the actual host
+port = 443            # Replace with the actual port
+#host = 'localhost'
+#port = 4433
 
 # Create a socket and connect
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,6 +72,7 @@ private_key = ec.generate_private_key(ec.SECP256R1())
 client_hello_bytes = generate_client_hello(private_key.public_key())
 
 write_handshake(TypeAndBytes(ContentType.HANDSHAKE, client_hello_bytes))
+record_layer.set_allow_change_cipher_spec(True)
 server_hello = read_handshake()
 
 
@@ -104,6 +105,7 @@ print(f"Certificate: {certificate.data.hex()}")
 certificate_verify = read_handshake()
 print(f"CertificateVerify: {certificate_verify.data.hex()}")
 server_finished = read_handshake()
+record_layer.set_allow_change_cipher_spec(False)
 print(f"server Finished: {server_finished.data.hex()}")
 
 client_application_traffic_secret, server_application_traffic_secret = key_schedule.calc_application_traffic_secrets()

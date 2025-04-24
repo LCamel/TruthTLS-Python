@@ -1,11 +1,11 @@
 from common import ContentType, TypeAndBytes, LEGACY_RECORD_VERSION_BYTES
 
 class RecordLayer:
-    def __init__(self, read_bytes_func, write_bytes_func):
+    def __init__(self, read_bytes_func, write_bytes_func, allow_change_cipher_spec=False):
         self.read_bytes_func = read_bytes_func
         self.record_decryptor = None
         self.left_over = None
-        self.allow_change_cipher_spec = True # for client side  TODO: server side
+        self.allow_change_cipher_spec = allow_change_cipher_spec
 
         self.write_bytes_func = write_bytes_func
         self.record_encryptor = None        
@@ -93,12 +93,10 @@ class RecordLayer:
                 break
         return result, record
 
-    def read_without_change_cipher_spec(self):        
+    def read_drop_change_cipher_spec(self):        
         while True:
             record = self.read_reassembled()
             if record.content_type != ContentType.CHANGE_CIPHER_SPEC:
-                if record.content_type == ContentType.HANDSHAKE and record.data[0] == 20: # peer Finished
-                    self.allow_change_cipher_spec = False
                 return record
             else:
                 if not self.allow_change_cipher_spec:
@@ -107,9 +105,12 @@ class RecordLayer:
                     if record.data != b'\x01':
                         raise ValueError("Invalid CHANGE_CIPHER_SPEC message")
                     # MUST simply drop it without further processing
-    
+
+    def set_allow_change_cipher_spec(self, value):
+        self.allow_change_cipher_spec = value
+                 
     def read(self):
-        return self.read_without_change_cipher_spec()
+        return self.read_drop_change_cipher_spec()
 
     # I trust the writer    
     def write(self, type_and_bytes):
@@ -151,53 +152,5 @@ class RecordEncryptor:
         # GCM 標籤長度固定為 16 字節
         aad = self.AAD_PREFIX + (len(plaintext) + 16).to_bytes(2, byteorder='big')
         ciphertext = self.aead.encrypt(nonce, plaintext, aad)
-        print("computed length:", (len(plaintext) + 16))
-        print("ciphertext length:", len(ciphertext))
         return ciphertext
     
-if __name__ == "__main__":
-    import sys
-    def read_bytes(n):
-        data = sys.stdin.buffer.read(n)
-        if (len(data) < n):
-            raise ValueError("Not enough data")
-        return data
-    
-    def show(record):
-        print(f"ContentType: {record.content_type}, Length: {len(record.data)}, Data: {record.data.hex()}")
-
-    record_layer = RecordLayer(read_bytes)
-    record = record_layer.read()
-    show(record) # ServerHello
-    
-    from key_schedule_functions import KeyScheduleFunctions
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-    import hashlib
-
-    print("====" * 10)
-    record_decryptor = RecordDecryptor(
-        traffic_secret=bytes.fromhex("9c0e9fbd6b130655ddd885bca6777cbb64f43f0882d2988caaf617a911dc5899"),
-        hkdf_expand_label_func=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
-        aead_class=AESGCM,
-        key_length=16,
-        iv_length=12
-    )
-    record_layer.set_record_decryptor(record_decryptor)
-
-    for i in range(4):
-        record = record_layer.read()
-        show(record)
-
-    print("====" * 10)
-    record_decryptor = RecordDecryptor(
-        traffic_secret=bytes.fromhex("acf8dd4819144487a198b3ec89264f5253e586d0e9983fde08f81e826416f1e2"),
-        hkdf_expand_label_func=KeyScheduleFunctions(hashlib.sha256).hkdf_expand_label,
-        aead_class=AESGCM,
-        key_length=16,
-        iv_length=12
-    )
-    record_layer.set_record_decryptor(record_decryptor)
-
-    for i in range(3):
-        record = record_layer.read()
-        show(record)
