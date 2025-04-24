@@ -71,6 +71,30 @@ exporter_master_secret = Derive-Secret(Master Secret, "exp master", ClientHello.
 resumption_master_secret = Derive-Secret(Master Secret, "res master", ClientHello...client Finished)
 ```
 
+```
+幫我寫一個 class KeySchedule3
+放在 key_schedule3.py 裡面
+我希望有這些 function:
+set_PSK
+(先跳過 binder_key)
+set_DHE
+set_transcript(data, nth)
+其中 nth 的值是 0, 1, 2, 3
+0 代表到 ClientHello 為止
+1 代表到 ServerHello 為止
+2 代表到 server Finished 為止
+3 代表到 client Finished 為止
+幫我把 0 1 2 3 這四個值取對應的 constant 名稱
+
+被 set 的欄位本來都是 None, set 給的 input 必定不可以是 None. 但可以是 hash length 長度的 constant ZERO.
+set 以後就不能重複 set.
+
+有一些 get function, 像 get_client_handshake_traffic_secret()
+裡面會去呼叫 dependency 像 get_handshake_secret()
+如果拿回的 dependency 是 None 則 raise error
+會把計算結果在內部儲存下來
+```
+
 
 ```
 幫我寫一個 class KeySchedule2
