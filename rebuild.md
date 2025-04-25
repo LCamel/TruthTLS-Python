@@ -128,3 +128,19 @@ from key_schedule2 import KeySchedule2
 ```
 我希望 class KeySchedule2 和 class KeySchedule 比較, 而不是光和 KeyScheduleFunctions 比較
 ```
+
+
+```
+我想要有一個 class KeySchedule4, 放在 key_schedule4.py
+有 4 個 state INIT / EARLY / HANDSHAKE / APPLICATION
+new 出來是 INIT
+to_early(PSK) 是 state EARLY
+to_handshake(DHE) 是 state HANDSHAKE
+to_application() 是 state APPLICATION
+裡面有 private data member "curr_secret", 分 state 分別是 None / early secret / handshake secret / master secret
+
+然後有 method 可以算出外面用的 secrets
+像 client_handshake_traffic_secret(to_server_hello_transcript_hash)
+就只有在 state HANDSHAKE 可以呼叫
+其他 state 呼叫會 raise error
+```

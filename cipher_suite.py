@@ -205,6 +205,24 @@ class CipherSuite:
         
         # Call HKDF-Expand-Label with the transcript hash as context
         return self.hkdf_expand_label(secret, label, transcript_hash, self.hash_len)
+    
+    def derive_secret_with_hash(self, secret, label, transcript_hash):
+        """
+        Derive secret directly using a pre-computed transcript hash.
+        
+        This is an optimized version of derive_secret that takes a pre-computed
+        hash of the transcript, avoiding the need to hash the entire transcript again.
+        
+        Args:
+            secret: The secret key material
+            label: The label string as bytes
+            transcript_hash: The pre-computed hash of the transcript messages
+            
+        Returns:
+            The derived secret of hash length
+        """
+        # Call HKDF-Expand-Label with the pre-computed transcript hash as context
+        return self.hkdf_expand_label(secret, label, transcript_hash, self.hash_len)
         
     def traffic_key_and_iv(self, traffic_secret):
         """
