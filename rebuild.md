@@ -144,3 +144,15 @@ to_application() 是 state APPLICATION
 就只有在 state HANDSHAKE 可以呼叫
 其他 state 呼叫會 raise error
 ```
+
+```
+我想要一個 class Transcript
+init 時給 cipher_suite
+只需要提供兩個 method 給外面使用
+add_handshake(handshake_bytes)
+current_hash()
+內部不用儲存完整的 transcript
+只要有 running hash, 然後在 current_hash() 時 copy 一份出來計算就好
+到時候別的 class 會在 add_handshake() 之後在適當的時機呼叫 current_hash()
+```
+

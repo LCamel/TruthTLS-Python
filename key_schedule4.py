@@ -21,10 +21,10 @@ class KeySchedule4:
         if self._state != required_state:
             raise ValueError(f"Cannot call {method_name} in {self._state.name} state. Must be in {required_state.name} state.")
     
-    def to_early(self, psk):
+    def to_early(self, psk=None):
         self._check_state(State.INIT, "to_early")
         if psk is None:
-            raise ValueError("PSK cannot be None")
+            psk = self.ZERO
         self._curr_secret = self.HKDF_extract(self.ZERO, psk)
         self._state = State.EARLY
         return self

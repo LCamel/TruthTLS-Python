@@ -11,6 +11,9 @@ class RecordLayer:
         self.write_bytes_func = write_bytes_func
         self.record_encryptor = None        
 
+    def set_cipher_suite(self, cipher_suite):
+        self.cipher_suite = cipher_suite
+
     def read_record(self):
         header = self.read_bytes_func(5)
         content_type = header[0]

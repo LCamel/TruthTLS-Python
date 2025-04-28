@@ -29,3 +29,27 @@ class TypeAndBytes:
     
     def length(self):
         return len(self.data)
+    
+def make_read_write_fully_funcs(sock):
+    def read_fully(n):  
+        if n < 0:
+            raise ValueError("Cannot read negative number of bytes")
+        
+        data = bytearray(n)
+        bytes_read = 0
+        while bytes_read < n:
+            view = memoryview(data)[bytes_read:]
+            remaining = n - bytes_read
+            
+            chunk_len = sock.recv_into(view, remaining)
+            if chunk_len == 0:
+                raise RuntimeError(f"Socket connection closed before reading enough data (got {bytes_read} bytes, expected {n})")
+            
+            bytes_read += chunk_len
+        
+        return bytes(data)
+
+    def write_fully(data):
+        sock.sendall(data)
+
+    return read_fully, write_fully
